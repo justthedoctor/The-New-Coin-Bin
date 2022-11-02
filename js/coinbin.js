@@ -116,7 +116,19 @@ var host = $("#coinjs_broadcast option:selected").val();
 
 		$("#walletQrCode").html("");
 		var qrcode = new QRCode("walletQrCode");
-		qrcode.makeCode("bitcoin:");
+		// QRCode Change
+		if(host=='chainz_pandacoin') {
+			qrcode.makeCode("pandacoin:");
+		}
+		else if(host=='chainz_blackcoin') {
+			qrcode.makeCode("blackcoin:");
+		}
+		else if(host=='chainz_digibyte') {
+			qrcode.makeCode("digibyte:");
+		}
+		else {
+			qrcode.makeCode("bitcoin:");
+		}
 
 		$("#walletKeys .privkey").val("");
 		$("#walletKeys .pubkey").val("");
@@ -330,12 +342,35 @@ var host = $("#coinjs_broadcast option:selected").val();
 			var tx = coinjs.transaction();
 			$("#walletLoader").removeClass("hidden");
 			coinjs.addressBalance($("#walletAddress").html(),function(data){
-				if($(data).find("result").text()==1){
+				if(host=='chainz_pandacoin') {
+					if(data) {
+						var v = data
+						$("#walletBalance").html(v+" PND").attr('rel',v).fadeOut().fadeIn();
+					} else {
+						$("#walletBalance").html("0 PND").attr('rel',v).fadeOut().fadeIn();
+					}
+				} else if(host=='chainz_digibyte') {
+					if(data) {
+						var v = data
+						$("#walletBalance").html(v+" DGB").attr('rel',v).fadeOut().fadeIn();
+					} else {
+						$("#walletBalance").html("0 DGB").attr('rel',v).fadeOut().fadeIn();
+					}
+				} else if(host=='chainz_blackcoin') {
+					if(data) {
+						var v = data
+						$("#walletBalance").html(v+" BLK").attr('rel',v).fadeOut().fadeIn();
+					} else {
+						$("#walletBalance").html("0 BLK").attr('rel',v).fadeOut().fadeIn();
+					}
+				}	else {
+					if($(data).find("result").text()==1){
 					var v = $(data).find("balance").text()/100000000;
 					$("#walletBalance").html(v+" BTC").attr('rel',v).fadeOut().fadeIn();
 				} else {
 				$("#walletBalance").html("0.00 BTC").attr('rel',v).fadeOut().fadeIn();
 				}
+			}
 
 				$("#walletLoader").addClass("hidden");
 			});
@@ -663,6 +698,8 @@ var host = $("#coinjs_broadcast option:selected").val();
 			tx.lock_time = $("#nLockTime").val()*1;
 		}
 
+	  tx.nTime = (Date.now() / 1000 | 0)*1;
+
 		$("#inputs .row").removeClass('has-error');
 
 		$('#putTabs a[href="#txinputs"], #putTabs a[href="#txoutputs"]').attr('style','');
@@ -735,6 +772,16 @@ var host = $("#coinjs_broadcast option:selected").val();
 				$("#fees .txhex").val("");
 				window.location = "#fees";
 			} else {
+				$("#transactionCreate .transactionToSign").on( "click", function() {
+					$("#signTransaction").val(tx.serialize()).fadeOut().fadeIn();;
+					window.location.hash = "#sign";
+				});
+
+				$("#transactionCreate .transactionToVerify").on( "click", function() {
+					$("#verifyScript").val(tx.serialize()).fadeOut().fadeIn();;
+					window.location.hash = "#verify";
+					$("#verifyBtn").click();
+				});
 
 				$("#transactionCreate").removeClass("hidden");
 
@@ -1110,7 +1157,7 @@ var host = $("#coinjs_broadcast option:selected").val();
 				$.each($(data).find("inputs").children(), function(i,o){
 					var tx = $(o).find("txid").text();
 					var n = $(o).find("output_no").text();
-					var amount = (($(o).find("value").text()*1)).toFixed(8);
+					var amount = (($(o).find("value").text()*1)).toFixed(6);
 
 					var scr = $(o).find("script").text();
 
@@ -1145,7 +1192,7 @@ var host = $("#coinjs_broadcast option:selected").val();
 					var tx = $(o).find("tx_hash").text();
 					var n = $(o).find("tx_output_n").text();
 					var script = (redeem.redeemscript==true) ? redeem.decodedRs : $(o).find("script").text();
-					var amount = (($(o).find("value").text()*1)/100000000).toFixed(8);
+					var amount = (($(o).find("value").text()*1)/100000000).toFixed(6);
 
 					addOutput(tx, n, script, amount);
 				});
@@ -1240,9 +1287,10 @@ var host = $("#coinjs_broadcast option:selected").val();
 	                    $("#redeemFromAddress").removeClass('hidden').html('<span class="glyphicon glyphicon-info-sign"></span> Retrieved unspent inputs from address <a href="'+explorer_addr+redeem.addr+'" target="_blank">'+redeem.addr+'</a>');
 	                  data.unspent_outputs.forEach(function(item, i) {
 	                    if (i > 100) return;
-	                      var tx_hash = item.tx_hash;
+											  var tx_hash = ((""+item.tx_hash).match(/.{1,2}/g).reverse()).join("")+'';
 	                      var tx_ouput_n = item.tx_ouput_n;
-	                      var value = item.value /100000000;
+												//var value = item.value /100000000
+	                      var value = (item.value /100000000).toFixed(6);
 	                      //var value = ((item.value.text()*1)/100000000).toFixed(8);
 	                      var confirms = item.confirmations;
 	                      console.log(confirms)
@@ -1275,7 +1323,7 @@ var host = $("#coinjs_broadcast option:selected").val();
 				                    $("#redeemFromAddress").removeClass('hidden').html('<span class="glyphicon glyphicon-info-sign"></span> Retrieved unspent inputs from address <a href="'+explorer_addr+redeem.addr+'" target="_blank">'+redeem.addr+'</a>');
 				                  data.unspent_outputs.forEach(function(item, i) {
 				                    if (i > 100) return;
-				                      var tx_hash = item.tx_hash;
+				                      var tx_hash = ((""+item.tx_hash).match(/.{1,2}/g).reverse()).join("")+'';
 				                      var tx_ouput_n = item.tx_ouput_n;
 				                      var value = item.value /100000000;
 				                      //var value = ((item.value.text()*1)/100000000).toFixed(8);
@@ -1310,7 +1358,7 @@ var host = $("#coinjs_broadcast option:selected").val();
 																	$("#redeemFromAddress").removeClass('hidden').html('<span class="glyphicon glyphicon-info-sign"></span> Retrieved unspent inputs from address <a href="'+explorer_addr+redeem.addr+'" target="_blank">'+redeem.addr+'</a>');
 																data.unspent_outputs.forEach(function(item, i) {
 																	if (i > 100) return;
-																		var tx_hash = item.tx_hash;
+																		var tx_hash = ((""+item.tx_hash).match(/.{1,2}/g).reverse()).join("")+'';
 																		var tx_ouput_n = item.tx_ouput_n;
 																		var value = item.value /100000000;
 																		//var value = ((item.value.text()*1)/100000000).toFixed(8);
